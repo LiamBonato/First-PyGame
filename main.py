@@ -110,7 +110,6 @@ while True:
         player_rect.y += player_gravity
         if player_rect.bottom >= ground_height: player_rect.bottom = ground_height
             
-        # Testing
         screen.blit(player_surf,player_rect)
         
         # Display Score
