@@ -109,7 +109,8 @@ while True:
         player_gravity += 1
         player_rect.y += player_gravity
         if player_rect.bottom >= ground_height: player_rect.bottom = ground_height
-            
+        
+        # Test Push
         screen.blit(player_surf,player_rect)
         
         # Display Score
