@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random 
+import math
 
 pygame.init()
 screen = pygame.display.set_mode((800,400))
@@ -12,18 +13,24 @@ start_time = 0
 high_score = 0
 bonus_score = 0
 
+def player_image(invince_active):
+    global player_surf
+    
+    if invince_active:
+        player_surf = player_invince
+    else:
+        player_surf = player
+
 # Surfaces
 background_surf = pygame.image.load('images/Background1.png').convert()
 
 ground_height = 300
 ground_surf = pygame.image.load('images/ground.png').convert()
 
-## Power Ups
-coin_surf = pygame.image.load('images/coin.png').convert_alpha()
-coin_rect = coin_surf.get_rect(midbottom = (400, 200))
-
 ## PLAYER
-player_surf = pygame.image.load('images/StickMan.png').convert_alpha()
+player_invince = pygame.image.load('images/StickMan_invince.png').convert_alpha()
+player = pygame.image.load('images/StickMan.png').convert_alpha()
+player_surf = player
 player_rect = player_surf.get_rect(midbottom = (100,300))
 
 # ENEMIES
@@ -55,7 +62,20 @@ title_rect = title_surf.get_rect(center = (400,50))
 start_surf = game_font.render('Press Space to Start',False,(64,64,64))
 start_rect = title_surf.get_rect(center = (400,150))
 
+# Power ups
+# Banana = invincibility for 1 hit
+banana_active = False
+invince_active = False
+banana_surf = pygame.image.load('images/banana.png').convert_alpha()
+banana_rect = banana_surf.get_rect(midbottom = (0, 0))
+# Coin = +3 points
+coin_surf = pygame.image.load('images/coin.png').convert_alpha()
+coin_rect = coin_surf.get_rect(midbottom = (400, 200))
 
+# Sounds 
+level_up = pygame.mixer.Sound('sounds/level_up.mp3')
+
+collided = False
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -79,11 +99,15 @@ while True:
                 player_speed = 0
             if event.key == pygame.K_SPACE and game_active == False:
                 game_active = True
+                invince_active = False
+                collided = False
                 start_time = pygame.time.get_ticks()
                 current_level = 1
                 bonus_score = 0
                 
             
+    sin_waves = 3 * math.sin(pygame.time.get_ticks() / 100)
+    
     screen.blit(background_surf,(0,0))
     screen.blit(ground_surf,(0,300))
     
@@ -109,7 +133,8 @@ while True:
         player_gravity += 1
         player_rect.y += player_gravity
         if player_rect.bottom >= ground_height: player_rect.bottom = ground_height
-            
+        
+        player_image(invince_active=invince_active)
         screen.blit(player_surf,player_rect)
         
         # Display Score
@@ -118,7 +143,18 @@ while True:
         score_rect = score_surf.get_rect(center = (400,50))
         screen.blit(score_surf,score_rect)
         if score > high_score: high_score = score
+        
+        # Power ups
+        if score and score % 10 == 0 and not banana_active:
+            randgen = random.random()
+            if randgen < 0.05:
+                banana_active = True
+                randx = random.uniform(50, 750) // 1
+                randy = random.uniform(100, 250) // 1
+                banana_rect.x , banana_rect.y = randx, randy
             
+        if banana_active:
+            screen.blit(banana_surf, banana_rect)
         
         if current_level > 0:
             screen.blit(square_surf,square_rect)
@@ -166,21 +202,35 @@ while True:
                 else:
                     ufo_speed *= -1
 
+        # Enemy Collisions
         if player_rect.colliderect(square_rect) or player_rect.colliderect(square2_rect) or player_rect.colliderect(ufo_rect):
-            game_active = False
-            player_rect.x = 50
-            square_rect.x = 700
-            square_speed = 4
-            square2_rect.x = 850
-            square2_speed = 7
-            ufo_rect.x = 900
-            ufo_speed = 5.5
+            if invince_active:
+                collided = True
+            else:
+                game_active = False
+                player_rect.x = 50
+                square_rect.x = 700
+                square_speed = 4
+                square2_rect.x = 850
+                square2_speed = 7
+                ufo_rect.x = 900
+                ufo_speed = 5.5
+                
+        else:
+            if collided:
+                invince_active = False
+                collided = False
             
+        # Power Up Collisions
         if player_rect.colliderect(coin_rect):
             bonus_score += 3 
             randx = random.uniform(50, 750) // 1
             randy = random.uniform(100, 250) // 1
             coin_rect.x , coin_rect.y = randx, randy
+            
+        if player_rect.colliderect(banana_rect):
+            invince_active = True
+            banana_active = False
         
         if score >= 50 and score < 100:
             current_level = 2
@@ -192,11 +242,10 @@ while True:
     else:
         HS_surf = game_font.render(f'High Score: {high_score}',False,(64,64,64))
         HS_rect = HS_surf.get_rect(center = (400,170))
+        start_rect.y = 120 + sin_waves
         screen.blit(title_surf,title_rect)
         screen.blit(start_surf,start_rect)
         screen.blit(HS_surf,HS_rect)
-    
-    
     
     pygame.display.update()
     clock.tick(60)

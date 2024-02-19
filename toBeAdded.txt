@@ -1,0 +1,6 @@
+Noises upon collisions, maybe on jumps too,
+a screen to explain the controls and power ups
+add in power ups...
+    invincibility for certain time or for one hit
+something rude...
+change background based on level
